@@ -2,48 +2,21 @@ mod questions;
 
 use clap::{App, Arg};
 use questions::*;
-// use questions::get_total_number_of_questions;
 use rand::Rng;
-use std::error::Error;
+// use std::error::Error;
 use std::io;
-struct Settings {
-    num_questions: u32,
+pub struct Settings {
     include_easy: bool,
     include_medium: bool,
     include_hard: bool,
 }
 
-fn parse_num_questions_argument(input: &str) -> Result<u32, Box<dyn Error>> {
-    let total_num_questions = get_total_number_of_questions();
-
-    match input.parse() {
-        Ok(num_questions) if num_questions <= 0 => Err(From::from(input)),
-        Ok(num_questions) if num_questions <= total_num_questions => Ok(num_questions),
-        Ok(_) => {
-            println!(
-                "That a lot of questions, best I can do is {}, sorry. Have fun!",
-                total_num_questions
-            );
-            Ok(total_num_questions)
-        }
-        _ => Err(From::from(input)),
-    }
-}
-
 // TODO: change function name
-fn get_args() -> Result<Settings, Box<dyn Error>> {
+pub fn get_args() -> Settings {
     let matches = App::new("Who wants to be a millionaire? (Rustacean edition)")
         .version("0.1.0")
         .author("Joshua Taylor joshtaylor361@gmail.com")
         .about("Who wants to be a millionaire? (Rustacean edition)")
-        .arg(
-            Arg::with_name("num_questions")
-                .short("n")
-                .long("questions")
-                .value_name("NUM_QUESTIONS")
-                .default_value("12")
-                .help("Number of questions you'd like to be quized on"),
-        )
         .arg(
             Arg::with_name("easy")
                 .short("e")
@@ -67,12 +40,6 @@ fn get_args() -> Result<Settings, Box<dyn Error>> {
         )
         .get_matches();
 
-    let num_questions = matches
-        .value_of("num_questions")
-        .map(parse_num_questions_argument)
-        .transpose()
-        .map_err(|e| format!("illegal line count -- {}", e))?;
-
     let include_easy = matches.is_present("easy");
     let include_medium = matches.is_present("medium");
     let include_hard = matches.is_present("hard");
@@ -81,29 +48,44 @@ fn get_args() -> Result<Settings, Box<dyn Error>> {
         .iter()
         .all(|flag| !flag);
 
-    Ok(Settings {
-        num_questions: num_questions.unwrap(),
+    Settings {
         include_easy: include_easy || include_all_difficulties,
         include_medium: include_medium || include_all_difficulties,
         include_hard: include_hard || include_all_difficulties,
-    })
+    }
 }
 
-fn get_questions() -> Vec<questions::Question> {
+// TODO: more rustic way to do this?
+fn get_questions(settings: Settings) -> Vec<Question> {
     let mut questions = vec![];
-    questions.extend(questions::EASY_QUESTIONS);
-    return questions;
+
+    if settings.include_easy {
+        questions.extend(EASY_QUESTIONS);
+    }
+    if settings.include_medium {
+        questions.extend(MEDIUM_QUESTIONS);
+    }
+    if settings.include_hard {
+        questions.extend(HARD_QUESTIONS);
+    }
+
+    questions
 }
 
-pub fn start() -> Result<(), io::Error> {
-    println!("Who wants to be a rust millionaire?\n");
+pub fn start_game(settings: Settings) -> Result<(), io::Error> {
+    println!("\nWho wants to be a rust millionaire?\n");
     println!("Let's start!\n");
 
-    for question in get_questions() {
+    let questions = get_questions(settings);
+
+    for (i, question) in questions.iter().enumerate() {
         println!("{}", question.prompt);
 
         let mut rng = rand::thread_rng();
         let corrent_answer_index: u8 = rng.gen_range(0..4);
+
+        let incorrect_answers_index =
+            |i: u8| if corrent_answer_index > i { i } else { i - 1 } as usize;
 
         for i in 0..4 {
             println!(
@@ -112,7 +94,7 @@ pub fn start() -> Result<(), io::Error> {
                 if i == corrent_answer_index {
                     question.corrent_answer
                 } else {
-                    question.incorrect_answers[if i == 3 { 2 } else { i } as usize]
+                    question.incorrect_answers[incorrect_answers_index(i)]
                 }
             )
         }
@@ -123,7 +105,13 @@ pub fn start() -> Result<(), io::Error> {
         match input.trim().parse::<u8>() {
             Ok(input) if input >= 1 && input <= 4 => {
                 if input - 1 == corrent_answer_index {
-                    println!("\nCorret, well done! n more question to go.")
+                    let num_questions_left = questions.len() - i - 1;
+                    if num_questions_left > 0 {
+                        println!(
+                            "\nCorrect, well done! {} more question to go.\n",
+                            num_questions_left
+                        )
+                    }
                 } else {
                     println!("\nIncorrect! Try again anytime.");
                     // break;
@@ -137,7 +125,7 @@ pub fn start() -> Result<(), io::Error> {
         }
     }
 
-    println!("Congratulations, You won who wants to be a Rust millionaire!");
+    println!("\nCongratulations, You won who wants to be a Rust millionaire!\n");
 
     Ok(())
 }
