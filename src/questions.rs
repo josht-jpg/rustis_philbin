@@ -15,14 +15,14 @@ pub const EASY_QUESTIONS: QuestionSet = [
         corrent_answer: "String slice",
     },
     Question {
-        prompt: "What type is this: str?",
+        prompt: "",
         incorrect_answers: ["Stir fry", "String", "Software Test Report"],
         corrent_answer: "String slice",
     },
     Question {
-        prompt: "What type is this: str?",
-        incorrect_answers: ["Stir fry", "String", "Software Test Report"],
-        corrent_answer: "String slice",
+        prompt: "WWhat statement best describes T in this function:\tfn largest<T>(list: &[T]) -> T { /*...*/ }\t?",
+        incorrect_answers: ["T is a String type", "String", "Software Test Report"],
+        corrent_answer: "T is a Generic type",
     },
     Question {
         prompt: "What are the varients of Rust's Result type?",
@@ -80,7 +80,3 @@ pub const HARD_QUESTIONS: QuestionSet = [
         corrent_answer: "Switching from a 32-bit platform to a 64-bit platform",
     },
 ];
-
-pub fn get_total_number_of_questions() -> usize {
-    EASY_QUESTIONS.len() + MEDIUM_QUESTIONS.len() + HARD_QUESTIONS.len()
-}

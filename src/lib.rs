@@ -3,7 +3,6 @@ mod questions;
 use clap::{App, Arg};
 use questions::*;
 use rand::Rng;
-// use std::error::Error;
 use std::io;
 pub struct Settings {
     include_easy: bool,
@@ -55,7 +54,6 @@ pub fn get_args() -> Settings {
     }
 }
 
-// TODO: more rustic way to do this?
 fn get_questions(settings: Settings) -> Vec<Question> {
     let mut questions = vec![];
 
@@ -73,8 +71,7 @@ fn get_questions(settings: Settings) -> Vec<Question> {
 }
 
 pub fn start_game(settings: Settings) -> Result<(), io::Error> {
-    println!("\nWho wants to be a rust millionaire?\n");
-    println!("Let's start!\n");
+    println!("\nWho wants to be a millionaire? ()\nLet's start!\n");
 
     let questions = get_questions(settings);
 
@@ -82,41 +79,16 @@ pub fn start_game(settings: Settings) -> Result<(), io::Error> {
         println!("{}", question.prompt);
 
         let mut rng = rand::thread_rng();
-        let corrent_answer_index: u8 = rng.gen_range(0..4);
+        let correct_answer_index: u8 = rng.gen_range(0..4);
 
-        let incorrect_answers_index =
-            |i: u8| if corrent_answer_index > i { i } else { i - 1 } as usize;
-
-        for i in 0..4 {
-            println!(
-                "{})\t{}",
-                i + 1,
-                if i == corrent_answer_index {
-                    question.corrent_answer
-                } else {
-                    question.incorrect_answers[incorrect_answers_index(i)]
-                }
-            )
-        }
+        print_answers(question, correct_answer_index);
 
         let mut input = String::new();
         io::stdin().read_line(&mut input)?;
 
         match input.trim().parse::<u8>() {
             Ok(input) if input >= 1 && input <= 4 => {
-                if input - 1 == corrent_answer_index {
-                    let num_questions_left = questions.len() - i - 1;
-                    if num_questions_left > 0 {
-                        println!(
-                            "\nCorrect, well done! {} more question to go.\n",
-                            num_questions_left
-                        )
-                    }
-                } else {
-                    println!("\nIncorrect! Try again anytime.");
-                    // break;
-                    std::process::exit(0)
-                }
+                handle_answer(input, correct_answer_index, questions.len() - i - 1)
             }
             _ => {
                 println!("Sorry, I wasn't able to understand that. Could you repeat your answer?");
@@ -126,8 +98,43 @@ pub fn start_game(settings: Settings) -> Result<(), io::Error> {
     }
 
     println!("\nCongratulations, You won who wants to be a Rust millionaire!\n");
-
     Ok(())
+}
+
+fn print_answers(question: &Question, correct_answer_index: u8) {
+    let incorrect_answers_index = |i: u8| if correct_answer_index > i { i } else { i - 1 } as usize;
+
+    for i in 0..4 {
+        println!(
+            "{})\t{}",
+            i + 1,
+            if i == correct_answer_index {
+                question.corrent_answer
+            } else {
+                question.incorrect_answers[incorrect_answers_index(i)]
+            }
+        )
+    }
+}
+
+fn handle_answer(input: u8, correct_answer_index: u8, num_questions_left: usize) {
+    let is_corrent_answer = input - 1 == correct_answer_index;
+    if is_corrent_answer {
+        if num_questions_left > 0 {
+            println!(
+                "\nCorrect, well done! {} more {} to go.\n",
+                num_questions_left,
+                if num_questions_left == 1 {
+                    "question"
+                } else {
+                    "questions"
+                }
+            )
+        }
+    } else {
+        println!("\nIncorrect! Try again anytime.");
+        std::process::exit(0)
+    }
 }
 
 #[cfg(test)]
