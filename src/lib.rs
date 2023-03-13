@@ -57,8 +57,7 @@ pub fn run_game(settings: Settings) -> Result<(), io::Error> {
     for (i, question) in questions.iter().enumerate() {
         println!("{}", question.prompt);
 
-        let correct_answer_index: u8 = thread_rng().gen_range(0..4);
-
+        let correct_answer_index: usize = thread_rng().gen_range(0..4);
         print_answers(question, correct_answer_index);
 
         let num_questions_left = questions.len() - i - 1;
@@ -85,30 +84,23 @@ fn get_questions(settings: Settings) -> Vec<Question> {
     questions
 }
 
-fn print_answers(question: &Question, correct_answer_index: u8) {
-    let incorrect_answers_index = |i: u8| if correct_answer_index > i { i } else { i - 1 } as usize;
+fn print_answers(question: &Question, correct_answer_index: usize) {
+    let mut answers = question.incorrect_answers.to_vec();
+    answers.insert(correct_answer_index, question.correct_answer);
 
-    for i in 0..4 {
-        println!(
-            "\n{})\t{}",
-            i + 1,
-            if i == correct_answer_index {
-                question.corrent_answer
-            } else {
-                question.incorrect_answers[incorrect_answers_index(i)]
-            }
-        )
+    for (i, answer) in answers.iter().enumerate() {
+        println!("\n{})\t{}", i + 1, answer)
     }
 }
 
-fn get_answer(correct_answer_index: u8, num_questions_left: usize) -> Result<(), io::Error> {
+fn get_answer(correct_answer_index: usize, num_questions_left: usize) -> Result<(), io::Error> {
     let mut input = String::new();
     let stdin = io::stdin();
     stdin.read_line(&mut input)?;
 
     loop {
         match input.trim().parse::<u8>() {
-            Ok(input) if input >= 1 && input <= 4 => {
+            Ok(input) if (1..=4).contains(&input) => {
                 handle_valid_input(input, correct_answer_index, num_questions_left);
                 break;
             }
@@ -123,17 +115,16 @@ fn get_answer(correct_answer_index: u8, num_questions_left: usize) -> Result<(),
     Ok(())
 }
 
-fn handle_valid_input(input: u8, correct_answer_index: u8, num_questions_left: usize) {
-    let is_corrent_answer = input - 1 == correct_answer_index;
-    if is_corrent_answer {
+fn handle_valid_input(input: u8, correct_answer_index: usize, num_questions_left: usize) {
+    let is_correct_answer = input - 1 == correct_answer_index as u8;
+    if is_correct_answer {
         if num_questions_left > 0 {
             println!(
-                "\nCorrect, well done! {} more {} to go.\n",
-                num_questions_left,
+                "\nCorrect, well done! {num_questions_left} {}.\n",
                 if num_questions_left == 1 {
-                    "question"
+                    "question left"
                 } else {
-                    "questions"
+                    "questions more to go"
                 }
             )
         }
